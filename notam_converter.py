@@ -2,7 +2,7 @@ from datetime import datetime
 import re
 import pyttsx3
 
-# Number to words dictionary for natural time pronunciation
+# --- SPEECH PRONUNCIATION MAPS ---
 HOURS_MINS_WORDS = {
     "00": "zero zero", "01": "zero one", "02": "zero two", "03": "zero three",
     "04": "zero four", "05": "zero five", "06": "zero six", "07": "zero seven",
@@ -21,8 +21,9 @@ HOURS_MINS_WORDS = {
     "56": "fifty six", "57": "fifty seven", "58": "fifty eight", "59": "fifty nine"
 }
 
-# Dictionary of Australian Airports, FIRs, and NOTAM Terms
-NOTAM_DICT = {
+# Extensive Australian ICAO Airport & Aviation Dictionary
+METAR_NOTAM_DICT = {
+    # --- MAJOR INTERNATIONAL & DOMESTIC AIRPORTS ---
     "YSSY": "Sydney Kingsford Smith Airport",
     "YMML": "Melbourne Airport",
     "YBBN": "Brisbane Airport",
@@ -34,11 +35,92 @@ NOTAM_DICT = {
     "YMHB": "Hobart International Airport",
     "YBCS": "Cairns Airport",
     "YBTL": "Townsville Airport",
+    "YMCY": "Sunshine Coast Airport",
+    "YAMB": "Amberley RAAF Base",
+    "YPEA": "Pearce RAAF Base",
+    "YSRI": "Richmond RAAF Base",
+    "YWLM": "Williamtown RAAF Base",
+    "YEDN": "Edinburg RAAF Base",
+    
+    # --- GENERAL AVIATION & METROPOLITAN SECONDARY ---
     "YSBK": "Bankstown Airport",
     "YMMB": "Moorabbin Airport",
     "YPJT": "Jandakot Airport",
     "YBAF": "Archerfield Airport",
     "YPPF": "Parafield Airport",
+    "YCAI": "Camden Airport",
+    "YCWH": "Moorabbin / Coldstream",
+    "YAVV": "Avalon Airport",
+    "YBLN": "Busselton Margaret River Airport",
+
+    # --- REGIONAL NEW SOUTH WALES ---
+    "YMDG": "Mudgee Airport",
+    "YMAY": "Albury Airport",
+    "YWAG": "Wagga Wagga Airport",
+    "YSDU": "Dubbo City Regional Airport",
+    "YTWN": "Tamworth Regional Airport",
+    "YARM": "Armidale Regional Airport",
+    "YCFS": "Coffs Harbour Airport",
+    "YPKA": "Port Macquarie Airport",
+    "YBHI": "Broken Hill Airport",
+    "YGLI": "Glen Innes Airport",
+    "YGRA": "Grafton Airport",
+    "YGTH": "Griffith Airport",
+    "YLHI": "Lord Howe Island Airport",
+    "YMOR": "Moree Airport",
+    "YNAR": "Narrabri Airport",
+    "YNRA": "Narrandera Airport",
+    "YORG": "Orange Airport",
+
+    # --- REGIONAL VICTORIA ---
+    "YBDG": "Bendigo Airport",
+    "YBLT": "Ballarat Airport",
+    "YMGB": "Gambier Airport",
+    "YMHU": "Mount Hotham Airport",
+    "YMES": "East Sale RAAF Base",
+    "YMNG": "Mangalore Airport",
+    "YMLT": "Launceston Airport",
+    "YMIA": "Mildura Airport",
+    "YSHT": "Shepparton Airport",
+    "YWGP": "Wangaratta Airport",
+
+    # --- REGIONAL QUEENSLAND ---
+    "YBRK": "Rockhampton Airport",
+    "YBMK": "Mackay Airport",
+    "YGLA": "Gladstone Airport",
+    "YBUD": "Bundaberg Airport",
+    "YFRA": "Fraser Coast / Hervey Bay Airport",
+    "YHID": "Horn Island Airport",
+    "YISA": "Mount Isa Airport",
+    "YROM": "Roma Airport",
+    "YCHA": "Charleville Airport",
+    "YEGP": "Emerald Airport",
+    "YLHI": "Hamilton Island Airport",
+    "YMKU": "Mackay Airport",
+    "YBCV": "Charters Towers Airport",
+
+    # --- REGIONAL WESTERN AUSTRALIA ---
+    "YPKG": "Kalgoorlie-Boulder Airport",
+    "YPPD": "Port Hedland International Airport",
+    "YBMA": "Karratha Airport",
+    "YBRM": "Broome International Airport",
+    "YPKG": "Esperance Airport",
+    "YABA": "Albany Airport",
+    "YARG": "Argyle Airport",
+    "YPXU": "Exmouth Airport",
+    "YNWU": "Paraburdoo Airport",
+
+    # --- REGIONAL SOUTH AUSTRALIA & NT ---
+    "YBAS": "Alice Springs Airport",
+    "YAYE": "Ayers Rock / Uluru Airport",
+    "YKNG": "Kingscote / Kangaroo Island Airport",
+    "YPLC": "Port Lincoln Airport",
+    "YWHY": "Whyalla Airport",
+
+    # --- NOTAM & TAF TERMINOLOGY ---
+    "TAF": "Terminal Area Forecast",
+    "TAF3": "TAF3 service active",
+    "CAVOK": "CAV OK",
     "RWY": "runway",
     "TWY": "taxiway",
     "CLSD": "closed",
@@ -52,98 +134,150 @@ NOTAM_DICT = {
     "TEMP": "temporary",
     "EST": "estimated",
     "DUE": "due to",
-    "CAVOK": "CAV OK",  # Converts CAVOK so speech engine says "CAV OK"
+    "HLDG": "holding",
+    "LGT": "light",
+    "EST": "Eastern Standard Time",
+    "SHRA": "showers of rain",
+    "SH": "showers of",
+    "RA": "rain",
+    "DZ": "drizzle",
+    "TS": "thunderstorm",
+    "FEW": "cloud few at",
+    "SCT": "scattered cloud at",
+    "BKN": "broken cloud at",
+    "OVC": "overcast at",
+    "TCU": "towering cumulus",
+    "CB": "cumulonimbus",
+    "INTER": "Intermittent variations from",
+    "TEMPO": "Temporary variations from",
+    "RMK": "Remarks:",
 }
 
 def format_spoken_time(hhmm_str):
-    """Converts a 4-digit time string like '2330' into 'twenty three thirty'."""
-    hh = hhmm_str[:2]
-    mm = hhmm_str[2:]
-    
-    spoken_hh = HOURS_MINS_WORDS.get(hh, hh)
-    spoken_mm = HOURS_MINS_WORDS.get(mm, mm)
-    
-    return f"{spoken_hh} {spoken_mm}"
+    """Converts '2330' -> 'twenty three thirty'."""
+    hh, mm = hhmm_str[:2], hhmm_str[2:]
+    return f"{HOURS_MINS_WORDS.get(hh, hh)} {HOURS_MINS_WORDS.get(mm, mm)}"
 
-def parse_time_input(token):
-    """Converts times like 2330, 2330Z, 0800UTC into spoken two-number format."""
-    clean = token.rstrip("Zz").upper()
-    
-    if re.match(r"^\d{4}$", clean):
-        spoken = format_spoken_time(clean)
-        return f"{spoken} U T C" if token.upper().endswith("Z") else spoken
+def spell_out_icao(icao_code):
+    """Fallback function to spell out unmapped 4-letter ICAO codes (e.g., YBHI -> Y B H I)."""
+    return " ".join(list(icao_code))
 
-    return token
-
-def expand_notam_date(token):
-    """Converts YYMMDDHHMM or YYMMDDHHMMZ into plain text date and spoken time."""
-    clean_token = token.rstrip("Zz")
-    if not re.match(r"^\d{10}$", clean_token):
-        return token
-
-    try:
-        dt = datetime.strptime(clean_token, "%y%m%d%H%M")
-        date_str = dt.strftime("%B %d, %Y")
-        time_str = dt.strftime("%H%M")
-        spoken_time = format_spoken_time(time_str)
-        return f"{date_str} at {spoken_time} U T C"
-    except ValueError:
-        return token
-
-def expand_runway(token):
-    """Expands runway codes like '16R/34L' into 'Runway 16 Right / 34 Left'."""
-    pattern = r"^(\d{2}[LCR]?)(/(\d{2}[LCR]?))?$"
-    match = re.match(pattern, token, re.IGNORECASE)
+def parse_wind(token):
+    """Converts wind groups like 31008KT or 28020G35KT into natural spoken English[cite: 1]."""
+    match = re.match(r"^(\d{3})(\d{2})(G\d{2})?KT$", token)
     if not match:
         return token
+    
+    dir_deg, speed_kt, gust = match.groups()
+    spoken_dir = " ".join(dir_deg)  # "310" -> "3 1 0"
+    
+    result = f"Wind {spoken_dir} degrees at {int(speed_kt)} knots"
+    if gust:
+        result += f" gusting at {int(gust[1:])} knots"
+    return result
 
-    def format_rwy(code):
-        num = code[:2]
-        side = {"L": " Left", "R": " Right", "C": " Center"}.get(code[2:].upper(), "")
-        return f"{num}{side}"
+def parse_cloud(token):
+    """Converts cloud layers like SCT045 into 'scattered cloud at 4500 feet'[cite: 1, 2]."""
+    match = re.match(r"^(FEW|SCT|BKN|OVC)(\d{3})(TCU|CB)?$", token)
+    if not match:
+        return token
+    
+    cover, alt, cloud_type = match.groups()
+    cover_str = METAR_NOTAM_DICT.get(cover, cover)
+    alt_feet = int(alt) * 100
+    type_str = f" {METAR_NOTAM_DICT.get(cloud_type, cloud_type)}" if cloud_type else ""
+    
+    return f"{cover_str} {alt_feet} feet{type_str}"
 
-    rwy1 = format_rwy(match.group(1))
-    if match.group(3):
-        return f"Runway {rwy1} / {format_rwy(match.group(3))}"
-    return f"Runway {rwy1}"
+def parse_validity_period(token):
+    """Converts TAF validities like 0300/0406 into spoken dates/times[cite: 1]."""
+    match = re.match(r"^(\d{2})(\d{2})/(\d{2})(\d{2})$", token)
+    if not match:
+        return token
+    
+    start_d, start_h, end_d, end_h = match.groups()
+    return f"Effective {start_d} {format_spoken_time(start_h + '00')} to {end_d} {format_spoken_time(end_h + '00')}"
 
-def convert_notam(raw_text):
-    text = re.sub(r"\b[A-E]\)", "", raw_text)
-    words = text.split()
-    translated = []
+def convert_aviation_text(raw_text):
+    """Decodes raw TAF and NOTAM blocks into plain English for TTS speech[cite: 1, 2]."""
+    lines = raw_text.strip().split("\n")
+    processed_lines = []
 
-    for word in words:
-        clean = word.strip(",.:;/()")
-        upper = clean.upper()
+    for line in lines:
+        line_clean = line.strip()
+        if not line_clean:
+            continue
+            
+        words = line_clean.split()
+        translated_words = []
 
-        if upper in NOTAM_DICT:
-            translated.append(NOTAM_DICT[upper])
-        elif re.match(r"^\d{10}Z?$", clean, re.IGNORECASE):
-            translated.append(expand_notam_date(clean))
-        elif re.match(r"^\d{4}Z?$", upper):
-            translated.append(parse_time_input(clean))
-        elif re.match(r"^\d{2}[LCR]?(/\d{2}[LCR]?)?$", upper):
-            translated.append(expand_runway(upper))
-        else:
-            translated.append(word)
+        for word in words:
+            clean = word.strip(",.:;/()")
+            upper = clean.upper()
 
-    return " ".join(translated)
+            # 1. Expand known airport codes and terms
+            if upper in METAR_NOTAM_DICT:
+                translated_words.append(METAR_NOTAM_DICT[upper])
+            # 2. Dynamic handling for unmapped Australian ICAO codes (starts with Y and 4 letters)
+            elif re.match(r"^Y[A-Z]{3}$", upper):
+                translated_words.append(f"Airport {spell_out_icao(upper)}")
+            # 3. Time blocks like FM030500
+            elif re.match(r"^FM\d{6}$", upper):
+                day, time_str = upper[2:4], upper[4:]
+                translated_words.append(f"From {day} {format_spoken_time(time_str)}")
+            # 4. 10-digit dates (YYMMDDHHMM or MMDDHHMM)
+            elif re.match(r"^\d{10}$", clean):
+                try:
+                    dt = datetime.strptime(clean, "%y%m%d%H%M")
+                    translated_words.append(f"{dt.strftime('%B %d')} {format_spoken_time(dt.strftime('%H%M'))}")
+                except ValueError:
+                    translated_words.append(clean)
+            # 5. Parse Wind (e.g. 31008KT)
+            elif re.match(r"^\d{3}\d{2}(G\d{2})?KT$", upper):
+                translated_words.append(parse_wind(upper))
+            # 6. Parse Clouds (e.g. SCT045 or FEW060TCU)
+            elif re.match(r"^(FEW|SCT|BKN|OVC)\d{3}(TCU|CB)?$", upper):
+                translated_words.append(parse_cloud(upper))
+            # 7. TAF Validity Period (e.g. 0300/0406)
+            elif re.match(r"^\d{4}/\d{4}$", upper):
+                translated_words.append(parse_validity_period(upper))
+            # 8. Visibility (9999 or 5000 meters)
+            elif upper == "9999":
+                translated_words.append("visibility 10 kilometers or more")
+            elif re.match(r"^\d{4}$", upper) and not upper.endswith("Z"):
+                translated_words.append(f"visibility {clean} meters")
+            # 9. Time with Zulu stamp (e.g. 022322Z)
+            elif re.match(r"^\d{6}Z$", upper):
+                day, time_str = upper[:2], upper[2:6]
+                translated_words.append(f"at {day} {format_spoken_time(time_str)} Zulu")
+            # 10. Temperature / QNH indicators
+            elif upper in ["T", "Q"]:
+                translated_words.append("Temperature" if upper == "T" else "QNH")
+            else:
+                translated_words.append(word)
+
+        processed_lines.append(" ".join(translated_words))
+
+    return "\n".join(processed_lines)
 
 def speak_text(text):
+    """Plays converted text through local Text-to-Speech audio engine."""
     try:
         engine = pyttsx3.init()
         engine.setProperty('rate', 160)
         engine.say(text)
         engine.runAndWait()
     except Exception as e:
-        print(f"(Audio playback unavailable: {e})")
+        print(f"(Audio playback error: {e})")
 
+# --- SAMPLE RUN ---
 if __name__ == "__main__":
-    sample = "A) YSSY B) 2608032330 E) WX CAVOK RWY 16R CLSD WEF 2330Z"
-    result = convert_notam(sample)
-    
-    print("\n--- CONVERTED TEXT FOR SPEECH ---")
-    print(result)
-    
-    print("\n🔊 Playing Audio...")
-    speak_text(result)
+    sample_input = """
+TAF YSSY 022322Z 0300/0406
+31008KT CAVOK
+FM030500 33014KT 9999 SHRA SCT045
+"""
+    decoded = convert_aviation_text(sample_input)
+    print("\n--- DECODED BRIEFING ---")
+    print(decoded)
+    speak_text(decoded)
